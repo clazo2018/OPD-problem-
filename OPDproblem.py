@@ -5,10 +5,12 @@ import networkx as nx
 class OPDGraph:
     """ Create an Instance of OPD problem """
 
-    def __init__(self, n, limit_inf=0, limit_sup=10):
+    def __init__(self, n, limit_inf=0, limit_sup=10, seed=None):
         self.n = n
         self.graph = nx.complete_graph(n)
-
+        self.seed = seed
+        if self.seed is not None:
+            rd.seed(self.seed)
         # Generate random uncertainty areas for edges and assign weights
         for u, v in self.graph.edges():
             # Generate random start and end points for the interval
