@@ -1,21 +1,22 @@
 import random as rd
-from typing import Tuple
-
 import networkx as nx
-import OPDproblem
+from .OPDproblem import OPDGraph
 
 
-class Alg(OPDproblem):
+class Alg:
+    def __init__(self, opd: OPDGraph, alpha=1, s=0, t=1):
+        self.graph = opd.graph
+        self.alpha = alpha
+        self.opd = opd
+        self.s = s
+        self.t = t
 
-    def search_app(self, method='min', alpha=1, s=0, t=1):
+    def search_app(self, method='inf'):
         """
 
         Search an alpha-approximation in the set of edges set_edges
 
-        :param alpha: an int, alpha of alpha approximation
         :param method: a string, method to create subgraph
-        :param s: an int, the source node for the path
-        :param t: an int, the target node for the path
         :return: a list and float, proposed path and weight of proposed path, or
                  none, none if the optimal path does not exist
         """
@@ -38,21 +39,17 @@ class Alg(OPDproblem):
 
         while True:
 
-            # Find the shortest path between s and t in the subgraph
-            optimal_path = nx.shortest_path(subgraph, source=s, target=t, weight='weight')
-            optimal_path_weight = nx.shortest_path_length(subgraph, source=s, target=t, weight='weight')
-
+            # Find the shortest path between self.s and self.t in the subgraph
+            optimal_path = nx.shortest_path(subgraph, source=self.s, target=self.t, weight='weight')
+            optimal_path_weight = nx.shortest_path_length(subgraph, source=self.s, target=self.t, weight='weight')
+            optimal_path = [(optimal_path[i], optimal_path[i + 1]) for i in range(len(optimal_path) - 1)]
             set_edges.append(optimal_path)
 
-            # Check if it is an alpha certificate
-            p_opt = self.optimal_path_bound(self, set_edges)
-            if optimal_path_weight <= alpha*p_opt[1]:
+            # Check if it is a self.alpha certificate
+            p_opt = self.opd.optimal_path_bound(set_edges)
+            if optimal_path_weight <= self.alpha*p_opt[1]:
                 return optimal_path, optimal_path_weight
 
             # Change weight of edges of set_edges by the real weight
             for edge in set_edges:
                 subgraph[edge[0]][edge[1]]['weight'] = self.graph[edge[0]][edge[1]]['weight']
-
-
-
-

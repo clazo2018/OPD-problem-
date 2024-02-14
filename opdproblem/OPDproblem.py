@@ -68,6 +68,7 @@ class OPDGraph:
         graph_min = self.graph.copy()
 
         # Assign as weight the lower bound of the area to those I do not know
+        print(list(self.graph.edges()))
         for edge in list(self.graph.edges()):
             if edge not in set_edges:
                 graph_min[edge[0]][edge[1]]['weight'] = graph_min[edge[0]][edge[1]]['area'][0]
