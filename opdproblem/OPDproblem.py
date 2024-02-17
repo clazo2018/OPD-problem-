@@ -5,17 +5,16 @@ import networkx as nx
 class OPDGraph:
     """ Create an Instance of OPD problem """
 
-    def __init__(self, n, limit_inf=0, limit_sup=10, seed=None):
+    def __init__(self, n, limit_inf=0, limit_sup=100):
         self.n = n
         self.graph = nx.complete_graph(n)
-        self.seed = seed
-        if self.seed is not None:
-            rd.seed(self.seed)
+        self.start = []
+
         # Generate random uncertainty areas for edges and assign weights
         for u, v in self.graph.edges():
             # Generate random start and end points for the interval
-            start = rd.uniform(limit_inf, limit_sup) + rd.uniform(0, 5)
-            end = start + rd.uniform(0, 5)
+            start = rd.uniform(limit_inf, limit_sup) + rd.uniform(0, 50)
+            end = start + rd.uniform(0, 50)
 
             # Generate a random number within the interval and assign it as weight
             weight = rd.uniform(start, end)
@@ -68,7 +67,6 @@ class OPDGraph:
         graph_min = self.graph.copy()
 
         # Assign as weight the lower bound of the area to those I do not know
-        print(list(self.graph.edges()))
         for edge in list(self.graph.edges()):
             if edge not in set_edges:
                 graph_min[edge[0]][edge[1]]['weight'] = graph_min[edge[0]][edge[1]]['area'][0]

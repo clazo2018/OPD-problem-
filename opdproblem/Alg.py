@@ -37,7 +37,7 @@ class Alg:
             elif method == 'sup':
                 subgraph[sub_edge[0]][sub_edge[1]]['weight'] = subgraph[sub_edge[0]][sub_edge[1]]['area'][1]
 
-        while True:
+        while True: # Cambiar por un for de todas las aristas
 
             # Find the shortest path between self.s and self.t in the subgraph
             optimal_path = nx.shortest_path(subgraph, source=self.s, target=self.t, weight='weight')
@@ -48,8 +48,10 @@ class Alg:
             # Check if it is a self.alpha certificate
             p_opt = self.opd.optimal_path_bound(set_edges)
             if optimal_path_weight <= self.alpha*p_opt[1]:
-                return optimal_path, optimal_path_weight
+                break
 
             # Change weight of edges of set_edges by the real weight
             for edge in set_edges:
                 subgraph[edge[0]][edge[1]]['weight'] = self.graph[edge[0]][edge[1]]['weight']
+
+        return [set_edges, optimal_path, optimal_path_weight]
