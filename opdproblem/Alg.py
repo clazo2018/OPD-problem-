@@ -4,7 +4,6 @@ from .OPDproblem import OPDGraph
 import matplotlib.pyplot as plt
 
 
-
 class Alg:
     def __init__(self, opd: OPDGraph, alpha=1, s=0, t=1):
         self.graph = opd.graph
@@ -38,12 +37,13 @@ class Alg:
         elif method == 'sup':
             for u, v, data in subgraph.edges(data=True):
                 data['weight'] = data['area'][1]
-
+        # Los pesos inf se estan asignando bien
         for i in range(len(list(self.graph.edges()))):
 
             # Find the shortest path between self.s and self.t in the subgraph
             optimal_path = nx.shortest_path(subgraph, source=self.s, target=self.t, weight='weight')
             optimal_path_edge = [(optimal_path[i], optimal_path[i + 1]) for i in range(len(optimal_path) - 1)]
+            print(optimal_path)
             optimal_path_peso = nx.shortest_path_length(subgraph, source=self.s, target=self.t, weight='weight')
 
             set_edges.extend(optimal_path_edge)
@@ -51,17 +51,21 @@ class Alg:
             # Change weight of edges of set_edges by the real weight
             for edge in optimal_path_edge:
                 subgraph[edge[0]][edge[1]]['weight'] = self.graph[edge[0]][edge[1]]['weight']
+
             # Calculate weigth of optimal path after reveal it
             optimal_path_weight = nx.path_weight(subgraph, optimal_path, 'weight')
 
             # Check if it is a self.alpha certificate
             p_opt = self.opd.optimal_path_bound(set_edges)
-            print(i)
-            print(optimal_path_weight, optimal_path_peso, self.alpha * p_opt[1],  p_opt[0], optimal_path_edge)
-            print(set_edges)
+            """print(i)
+            print(f'El camino optimo es: {p_opt[0]}')
+            print(f'El peso del camino optimo es {self.alpha * p_opt[1]}')
+            print(f'El peso del camino propuesto es:{optimal_path_weight}')
+            print(f'El camino propuesto es: {optimal_path_edge}')
+            print(f'El certificado es: {set_edges}')"""
             #########
-            # Extraemos las posiciones de los nodos para un gráfico más ordenado
-            pos = nx.spring_layout(subgraph)
+            """# Extraemos las posiciones de los nodos para un gráfico más ordenado
+            pos = nx.circular_layout(subgraph)
 
             # Dibujamos los nodos y las aristas
             nx.draw_networkx_nodes(subgraph, pos, node_color='skyblue', node_size=500)
@@ -75,8 +79,8 @@ class Alg:
             # Mostramos el gráfico
             plt.title("Grafo con pesos")
             plt.axis('off')
-            plt.show()
+            plt.show()"""
             #########
             if optimal_path_weight <= self.alpha*p_opt[1]:
-                break
-        return [set_edges, optimal_path, optimal_path_weight]
+                return [set_edges, optimal_path, optimal_path_weight]
+

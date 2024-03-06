@@ -67,9 +67,11 @@ class OPDGraph:
         graph_min = self.graph.copy()
 
         # Assign as weight the lower bound of the area to those I do not know
-        for edge in list(self.graph.edges()):
-            if edge not in set_edges:
-                graph_min[edge[0]][edge[1]]['weight'] = graph_min[edge[0]][edge[1]]['area'][0]
+        for u, v, data in graph_min.edges(data=True):
+            data['weight'] = data['area'][0]
+        for u, v in set_edges:
+            graph_min[u][v]['weight'] = self.graph[u][v]['weight']
+
 
         optimal_path = nx.shortest_path(graph_min, source=s, target=t, weight='weight')
         optimal_path_bound = nx.shortest_path_length(graph_min, source=s, target=t, weight='weight')
