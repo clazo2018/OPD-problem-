@@ -43,7 +43,7 @@ class Alg:
             # Find the shortest path between self.s and self.t in the subgraph
             optimal_path = nx.shortest_path(subgraph, source=self.s, target=self.t, weight='weight')
             optimal_path_edge = [(optimal_path[i], optimal_path[i + 1]) for i in range(len(optimal_path) - 1)]
-            print(optimal_path)
+            #print(optimal_path)
             optimal_path_peso = nx.shortest_path_length(subgraph, source=self.s, target=self.t, weight='weight')
 
             set_edges.extend(optimal_path_edge)
@@ -57,30 +57,57 @@ class Alg:
 
             # Check if it is a self.alpha certificate
             p_opt = self.opd.optimal_path_bound(set_edges)
-            """print(i)
-            print(f'El camino optimo es: {p_opt[0]}')
-            print(f'El peso del camino optimo es {self.alpha * p_opt[1]}')
-            print(f'El peso del camino propuesto es:{optimal_path_weight}')
-            print(f'El camino propuesto es: {optimal_path_edge}')
-            print(f'El certificado es: {set_edges}')"""
-            #########
-            """# Extraemos las posiciones de los nodos para un gráfico más ordenado
-            pos = nx.circular_layout(subgraph)
-
-            # Dibujamos los nodos y las aristas
-            nx.draw_networkx_nodes(subgraph, pos, node_color='skyblue', node_size=500)
-            nx.draw_networkx_edges(subgraph, pos, edge_color='black', arrows=True)
-            nx.draw_networkx_labels(subgraph, pos)
-
-            # Agregamos las etiquetas de los pesos
-            truncated_labels = {edge: f"{weight:.0f}" for edge, weight in nx.get_edge_attributes(subgraph, 'weight').items()}
-            nx.draw_networkx_edge_labels(subgraph, pos, edge_labels=truncated_labels)
-
-            # Mostramos el gráfico
-            plt.title("Grafo con pesos")
-            plt.axis('off')
-            plt.show()"""
+            # print(i)
+            # print(f'El camino optimo es: {p_opt[0]}')
+            # print(f'El peso del camino optimo es {self.alpha * p_opt[1]}')
+            # print(f'El peso del camino propuesto es:{optimal_path_weight}')
+            # print(f'El camino propuesto es: {optimal_path_edge}')
+            # print(f'El certificado es: {set_edges}')
+            #
+            # # Extraemos las posiciones de los nodos para un gráfico más ordenado
+            # pos = nx.circular_layout(subgraph)
+            #
+            # # Dibujamos los nodos y las aristas
+            # nx.draw_networkx_nodes(subgraph, pos, node_color='skyblue', node_size=500)
+            # nx.draw_networkx_edges(subgraph, pos, edge_color='black', arrows=True)
+            # nx.draw_networkx_labels(subgraph, pos)
+            #
+            # # Agregamos las etiquetas de los pesos
+            # truncated_labels = {edge: f"{weight:.0f}" for edge, weight in nx.get_edge_attributes(subgraph, 'weight').items()}
+            # nx.draw_networkx_edge_labels(subgraph, pos, edge_labels=truncated_labels)
+            #
+            # # Mostramos el gráfico
+            # plt.title("Grafo con pesos")
+            # plt.axis('off')
+            # plt.show()
             #########
             if optimal_path_weight <= self.alpha*p_opt[1]:
                 return [set_edges, optimal_path, optimal_path_weight]
 
+    def both_alg(self):
+        graph_uncovered = nx.Graph()
+        graph_uncovered.add_nodes_from(self.graph.nodes)
+        m_s = {}
+        m_t = {}
+        p_su = []
+        p_ut = []
+        s_aux = self.s
+        t_aux = self.t
+        approx = float('inf')
+
+        while approx > self.alpha:
+            m_s = m_s.union(s_aux)
+            m_t = m_t.union(t_aux)
+
+            # edges reveled
+            graph_uncovered.add_edge(s_aux, t_aux, weight=self.graph[s_aux][t_aux])
+            for u in graph_uncovered.nodes() - {m_s.union(m_t)}:
+                graph_uncovered.add_edge(s_aux, u, weight=self.graph[s_aux][u]['weight'])
+            for v in graph_uncovered.nodes() - {m_s.union(m_t)}:
+                graph_uncovered.add_edge(v, t_aux, weight=self.graph[s_aux][v]['weight'])
+
+            # Optimal path from s to t containing only uncovered edges.
+            p_prop = nx.shortest_path(graph_uncovered, source=self.s, target=self.t, weight='weight')
+            p_prop_edge = [(p_prop[i], p_prop[i + 1]) for i in range(len(p_prop) - 1)]
+
+            # Optimal path from s to u containing only uncovered edges.
