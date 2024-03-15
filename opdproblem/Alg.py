@@ -87,23 +87,24 @@ class Alg:
     def both_alg(self):
         graph_uncovered = nx.Graph()
         graph_uncovered.add_nodes_from(self.graph.nodes)
-        m_s = {}
-        m_t = {}
-        p_su = []
-        p_ut = []
+        m_s = set()
+        m_t = set()
+        p_su = {}
+        p_ut = {}
         s_aux = self.s
         t_aux = self.t
         approx = float('inf')
 
         while approx > self.alpha:
-            m_s = m_s.union(s_aux)
-            m_t = m_t.union(t_aux)
+            m_s.add(s_aux)
+            m_t.add(t_aux)
 
+            diff_set = m_t.union(m_s)
             # edges reveled
-            graph_uncovered.add_edge(s_aux, t_aux, weight=self.graph[s_aux][t_aux])
-            for u in graph_uncovered.nodes() - {m_s.union(m_t)}:
+            graph_uncovered.add_edge(s_aux, t_aux, weight=self.graph[s_aux][t_aux]['weight'])
+            for u in (graph_uncovered.nodes() - diff_set):
                 graph_uncovered.add_edge(s_aux, u, weight=self.graph[s_aux][u]['weight'])
-            for v in graph_uncovered.nodes() - {m_s.union(m_t)}:
+            for v in (graph_uncovered.nodes() - diff_set):
                 graph_uncovered.add_edge(v, t_aux, weight=self.graph[s_aux][v]['weight'])
 
             # Optimal path from s to t containing only uncovered edges.
@@ -111,3 +112,22 @@ class Alg:
             p_prop_edge = [(p_prop[i], p_prop[i + 1]) for i in range(len(p_prop) - 1)]
 
             # Optimal path from s to u containing only uncovered edges.
+            for u in (graph_uncovered.nodes() - diff_set):
+
+                # Compute the optimal su-path containing only uncovered edges
+                p_su[f'{u}'] = nx.shortest_path_length(graph_uncovered, source=self.s, target=u, weight='weight')
+
+                # Compute the optimal ut-path containing only uncovered edges
+                p_ut[f'{u}'] = nx.shortest_path_length(graph_uncovered, source=u, target=self.t, weight='weight')
+            s_aux = min(p_su, key=lambda x: p_su[x])
+            t_aux = min(p_ut, key=lambda x: p_ut[x])
+            p_prop_weight = 0
+
+            # Calculate weight of p_prop
+            for arista in p_prop_edge:
+                p_prop_weight += graph_uncovered.get_edge_data(*arista)['weight']
+
+            approx = p_prop_weight / (p_su[f'{s_aux}'] + p_ut[f'{t_aux}'])
+
+            return p_prop_edge
+
