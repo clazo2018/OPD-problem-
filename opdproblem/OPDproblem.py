@@ -72,11 +72,46 @@ class OPDGraph:
         for u, v in set_edges:
             graph_min[u][v]['weight'] = self.graph[u][v]['weight']
 
-
         optimal_path = nx.shortest_path(graph_min, source=s, target=t, weight='weight')
         optimal_path_bound = nx.shortest_path_length(graph_min, source=s, target=t, weight='weight')
 
         return optimal_path, optimal_path_bound
+
+    def certificate(self, set_edges, proposed_path_weight, alpha=1):
+
+        p_bound = self.optimal_path_bound(set_edges)
+        if proposed_path_weight <= alpha * p_bound[1]:
+            return True
+        else:
+            return False
+
+    def min_certificate(self, s=0, t=1):
+        optimal_path = nx.shortest_path(self.graph, source=s, target=t, weight='weight')
+        optimal_path_weight = nx.shortest_path_length(self.graph, source=s, target=t, weight='weight')
+
+        edges_certificate = [(optimal_path[i], optimal_path[i + 1]) for i in range(len(optimal_path) - 1)]
+        edges_graph = list(self.graph.edges())
+        len_iter = len(edges_graph) - len(edges_certificate)
+        for i in range(1, len_iter + 1):
+            for edge in range(0, len_iter, i):
+                # Create list to test certificate
+
+                l_aux = edges_certificate.copy()
+                edge_test = edges_graph[edge: edge+i]
+                set_aux = set(l_aux) | set(edge_test)
+                l_aux = list(set_aux)
+
+                # Test certificate
+                certificate = self.certificate(l_aux, optimal_path_weight)
+
+                if certificate:
+                    return l_aux
+
+
+
+
+
+
 
 
 
