@@ -5,25 +5,30 @@ import networkx as nx
 class OPDGraph:
     """ Create an Instance of OPD problem """
 
-    def __init__(self, n, limit_inf=0, limit_sup=100):
+    def __init__(self, n, limit_inf=0, limit_sup=100, weight_type='static'):
         self.n = n
         self.graph = nx.complete_graph(n)
         self.start = []
-
+        self.weight_type = weight_type
         # Generate random uncertainty areas for edges and assign weights
         for u, v in self.graph.edges():
             # Generate random start and end points for the interval
             start = rd.uniform(limit_inf, limit_sup) + rd.uniform(0, 50)
             end = start + rd.uniform(0, 50)
 
-            # Generate a random number within the interval and assign it as weight
-            weight = rd.uniform(start, end)
-
             # assign area
             self.graph[u][v]['area'] = (start, end)
 
             # assign weight
-            self.graph[u][v]['weight'] = weight
+            if weight_type == 'static':
+                # Generate a random number within the interval and assign it as weight
+                weight = rd.uniform(start, end)
+                self.graph[u][v]['weight'] = weight
+
+    def adversary(self, set_ed):
+        pass
+
+
 
     def proposed_path(self, set_edges, s=0, t=1):
         """
