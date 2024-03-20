@@ -88,7 +88,7 @@ class Alg:
                 p_opt = self.opd.optimal_path_bound(set_edges)
 
                 if optimal_path_weight <= self.alpha*p_opt[1]:
-                    return [set_edges, optimal_path, optimal_path_weight]
+                    return list(set(set_edges))
 
     def both_alg(self):
         graph_uncovered = nx.Graph()
