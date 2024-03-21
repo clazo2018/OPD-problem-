@@ -100,7 +100,6 @@ class OPDGraph:
         for i in range(1, len_iter + 1):
             for edge in range(0, len_iter, i):
                 # Create list to test certificate
-
                 l_aux = edges_certificate.copy()
                 edge_test = edges_graph[edge: edge+i]
                 set_aux = set(l_aux) | set(edge_test)
@@ -111,6 +110,7 @@ class OPDGraph:
 
                 if certificate:
                     return l_aux
+
 
 
 
