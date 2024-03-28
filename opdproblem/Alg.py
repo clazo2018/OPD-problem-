@@ -29,9 +29,7 @@ class Alg:
         if method == 'random1':
             for u, v, data in subgraph.edges(data=True):
                 data['weight'] = rd.uniform(data['area'][0], data['area'][1])
-        elif method == 'random2':
-            for u, v, data in subgraph.edges(data=True):
-                data['weight'] = rd.uniform(data['area'][0], data['area'][1])
+
         elif method == 'inf':
             for u, v, data in subgraph.edges(data=True):
                 data['weight'] = data['area'][0]

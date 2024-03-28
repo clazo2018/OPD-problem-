@@ -41,19 +41,19 @@ class OPDGraph:
                  none, none if the optimal path does not exist
         """
 
-        # Create a subgraph with the set of edges
-        subgraph = nx.Graph()
-        H = self.graph.edge_subgraph(set_edges).copy()
-        subgraph.add_nodes_from(list(self.graph.nodes()))
-        subgraph.add_edges_from(H.edges(data=True))
+        # Create an uncovered_graph with the set of edges
+        uncovered_graph = nx.Graph()
+        aux_graph = self.graph.edge_subgraph(set_edges).copy()
+        uncovered_graph.add_nodes_from(list(self.graph.nodes()))
+        uncovered_graph.add_edges_from(aux_graph.edges(data=True))
 
-        # Find the shortest path between s and t in the subgraph
+        # Find the shortest path between s and t in the uncovered_graph
         try:
-            optimal_path = nx.shortest_path(subgraph, source=s, target=t, weight='weight')
-            optimal_path_weight = nx.shortest_path_length(subgraph, source=s, target=t, weight='weight')
-            return optimal_path, optimal_path_weight
+            proposed_path = nx.shortest_path(uncovered_graph, source=s, target=t, weight='weight')
+            proposed_path_weight = nx.shortest_path_length(uncovered_graph, source=s, target=t, weight='weight')
+            return proposed_path, proposed_path_weight
         except nx.NetworkXNoPath:
-            # There is no path between s and t in the subgraph
+            # There is no path between s and t in the uncovered_graph
             return None, None
 
     def optimal_path_bound(self, set_edges, s=0, t=1):
@@ -68,20 +68,32 @@ class OPDGraph:
                   none, none if the optimal path does not exist
          """
 
-        graph_min = self.graph.copy()
+        min_graph = self.graph.copy()
 
         # Assign as weight the lower bound of the area to those I do not know
-        for u, v, data in graph_min.edges(data=True):
+        for u, v, data in min_graph.edges(data=True):
             data['weight'] = data['area'][0]
+        # Assign real weight those I know
         for u, v in set_edges:
-            graph_min[u][v]['weight'] = self.graph[u][v]['weight']
+            min_graph[u][v]['weight'] = self.graph[u][v]['weight']
 
-        optimal_path = nx.shortest_path(graph_min, source=s, target=t, weight='weight')
-        optimal_path_bound = nx.shortest_path_length(graph_min, source=s, target=t, weight='weight')
+        # Calculate optimal path in min graph
+        proposed_path = nx.shortest_path(min_graph, source=s, target=t, weight='weight')
+        proposed_path_weight = nx.shortest_path_length(min_graph, source=s, target=t, weight='weight')
 
-        return optimal_path, optimal_path_bound
+        return proposed_path, proposed_path_weight
 
     def certificate(self, set_edges, proposed_path_weight, alpha=1):
+
+        """
+        Check if set_edges is alpha-certificate alpha
+
+        :param set_edges: an int, set where you want to find the path
+        :param proposed_path_weight: a float, weight of proposed path
+        :param alpha: a float, factor of alpha-certificate
+
+        :return: bool, return true if set edges is alpha-certificate
+        """
 
         p_bound = self.optimal_path_bound(set_edges)
         if proposed_path_weight <= alpha * p_bound[1]:
@@ -89,7 +101,16 @@ class OPDGraph:
         else:
             return False
 
-    def min_certificate(self, s=0, t=1):
+    def min_certificate(self, s=0, t=1, alpha=1):
+        """
+        Calculate the minimum alpha-certificate on the graph
+
+        :param s: an int, the source node for the path
+        :param t: an int, the target node for the path
+        :param alpha: a float, factor of alpha-certificate
+
+        :return l_aux: a list, alpha-certificate edge list
+        """
         optimal_path = nx.shortest_path(self.graph, source=s, target=t, weight='weight')
         optimal_path_weight = nx.shortest_path_length(self.graph, source=s, target=t, weight='weight')
 
@@ -104,7 +125,7 @@ class OPDGraph:
                 l_aux = list(cert_test)
 
                 # Test certificate
-                certificate = self.certificate(l_aux, optimal_path_weight)
+                certificate = self.certificate(l_aux, optimal_path_weight, alpha)
 
                 if certificate:
                     return l_aux
