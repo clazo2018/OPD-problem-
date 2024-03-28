@@ -1,3 +1,4 @@
+from itertools import combinations
 import random as rd
 import networkx as nx
 
@@ -27,8 +28,6 @@ class OPDGraph:
 
     def adversary(self, set_ed):
         pass
-
-
 
     def proposed_path(self, set_edges, s=0, t=1):
         """
@@ -96,14 +95,13 @@ class OPDGraph:
 
         edges_certificate = [(optimal_path[i], optimal_path[i + 1]) for i in range(len(optimal_path) - 1)]
         edges_graph = list(self.graph.edges())
-        len_iter = len(edges_graph) - len(edges_certificate)
-        for i in range(1, len_iter + 1):
-            for edge in range(0, len_iter, i):
+
+        for i in range(1, len(edges_graph) + 1):
+            for test in combinations(edges_graph, i):
                 # Create list to test certificate
-                l_aux = edges_certificate.copy()
-                edge_test = edges_graph[edge: edge+i]
-                set_aux = set(l_aux) | set(edge_test)
-                l_aux = list(set_aux)
+                cert_test = set(edges_certificate)
+                cert_test.update(test)
+                l_aux = list(cert_test)
 
                 # Test certificate
                 certificate = self.certificate(l_aux, optimal_path_weight)

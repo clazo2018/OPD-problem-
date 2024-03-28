@@ -49,7 +49,8 @@ class Alg:
                         revealed_edges = set(set_edges)
                         for u, v, data in subgraph.edges(data=True):
                             if (u, v) not in revealed_edges and (v, u) not in revealed_edges:
-                                data['weight'] = rd.uniform(data['area'][0], data['area'][1])
+                                data['weight'] = rd.uniform(data['area'][0], data['weight'])
+                        print('while de reasignación')
 
                         optimal_path = nx.shortest_path(subgraph, source=self.s, target=self.t, weight='weight')
                         optimal_path_edge = [(optimal_path[i], optimal_path[i + 1]) for i in
@@ -72,69 +73,6 @@ class Alg:
                 if optimal_path_weight <= self.alpha * p_opt[1]:
                     return list(set(set_edges))
                 i += 1
-
-            elif method == 'random2':
-                paths = []
-                graph_random = subgraph.copy()
-                while len(set(set_edges)) != (len(graph.edges()) - 1):
-
-                    optimal_path = nx.shortest_path(subgraph, source=self.s, target=self.t, weight='weight')
-                    optimal_path_edge = [(optimal_path[i], optimal_path[i + 1]) for i in range(len(optimal_path) - 1)]
-                    if i != 0:
-                        print('camino optimo', optimal_path_edge)
-                        print('lista de busqueda', paths)
-                        while optimal_path_edge in paths:
-                            print('-'*20)
-                            try:
-                                max_weight = float('-inf')
-                                for edge in optimal_path_edge:
-                                    edge_weight = graph_random[edge[0]][edge[1]]['weight']
-                                    if edge_weight > max_weight:
-                                        max_weight = edge_weight
-                                        max_edge = edge
-                                graph_random.remove_edge(*max_edge)
-                                #print(graph_random.edges())
-                                optimal_path = nx.shortest_path(graph_random, source=self.s, target=self.t, weight='weight')
-                                optimal_path_edge = [(optimal_path[i], optimal_path[i + 1]) for i in
-                                                     range(len(optimal_path) - 1)]
-                            except:
-                                graph_random = subgraph.copy()
-                                for path in reversed(paths):
-
-                                    max_edge = max(path, key=lambda arista: graph_random[arista[0]][arista[1]]['weight'])
-                                    graph_random.remove_edge(*max_edge)
-
-                                    # print(graph_random.edges())
-                                    optimal_path = nx.shortest_path(graph_random, source=self.s, target=self.t,
-                                                                    weight='weight')
-                                    optimal_path_edge = [(optimal_path[i], optimal_path[i + 1]) for i in
-                                                         range(len(optimal_path) - 1)]
-                                    if optimal_path_edge not in paths:
-                                        break
-
-
-                    paths.append(optimal_path_edge)
-                    set_edges.extend(optimal_path_edge)
-
-                    # Change weight of edges of set_edges by the real weight
-                    for edge in optimal_path_edge:
-                        subgraph[edge[0]][edge[1]]['weight'] = graph[edge[0]][edge[1]]['weight']
-
-                    # Calculate weigth of optimal path after reveal it
-
-                    # Check if it is a self.alpha certificate
-                    p_opt = self.opd.optimal_path_bound(set_edges)
-                    #print(f'camino optimo  {optimal_path_edge}', set_edges)
-                    print(len(graph.edges()))
-                    print(len(set(set_edges)))
-                    for path in paths:
-                        node_path = [edge[0] for edge in path] + [path[-1][1]]
-
-                        # Calcular el peso del camino
-                        weight = nx.path_weight(subgraph, node_path, 'weight')
-                        if weight <= self.alpha * p_opt[1]:
-                            return list(set(set_edges))
-                    i += 1
 
             elif 'inf':
                 # Find the shortest path between self.s and self.t in the subgraph
@@ -203,4 +141,5 @@ class Alg:
             approx = p_prop_weight / (p_su[f'{s_aux}'] + p_ut[f'{t_aux}'])
 
         return p_prop_edge
+
 
