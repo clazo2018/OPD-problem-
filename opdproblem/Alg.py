@@ -34,13 +34,12 @@ class Alg:
             for u, v, data in subgraph.edges(data=True):
                 data['weight'] = data['area'][0]
 
-        # Los pesos inf se estan asignando bien
         i = 0
-        j = 0
         while len(set(set_edges)) != len(graph.edges()):
             if method == 'random1':
                 optimal_path = nx.shortest_path(subgraph, source=self.s, target=self.t, weight='weight')
-                optimal_path_edge = [(optimal_path[i], optimal_path[i + 1]) for i in range(len(optimal_path) - 1)]
+                optimal_path_edge = [(min(optimal_path[i], optimal_path[i + 1]),
+                                      max(optimal_path[i], optimal_path[i + 1])) for i in range(len(optimal_path) - 1)]
                 # Reassign weight of edges if repeat optimal path
                 if i != 0:
                     while set(optimal_path_edge) == set(previous_optimal_path_edge):
@@ -48,54 +47,59 @@ class Alg:
                         for u, v, data in subgraph.edges(data=True):
                             if (u, v) not in revealed_edges and (v, u) not in revealed_edges:
                                 data['weight'] = rd.uniform(data['area'][0], data['weight'])
-                        print('while de reasignación')
 
                         optimal_path = nx.shortest_path(subgraph, source=self.s, target=self.t, weight='weight')
-                        optimal_path_edge = [(optimal_path[i], optimal_path[i + 1]) for i in
-                                             range(len(optimal_path) - 1)]
+                        optimal_path_edge = [(min(optimal_path[i], optimal_path[i + 1]),
+                                              max(optimal_path[i], optimal_path[i + 1]))
+                                             for i in range(len(optimal_path) - 1)]
 
                 previous_optimal_path_edge = optimal_path_edge
 
                 set_edges.extend(optimal_path_edge)
 
+                if self.opd.weight_type == 'dynamic':
+                    self.opd.adversary(optimal_path_edge)
+
                 # Change weight of edges of set_edges by the real weight
                 for edge in optimal_path_edge:
-                    subgraph[edge[0]][edge[1]]['weight'] = graph[edge[0]][edge[1]]['weight']
+                    subgraph[edge[0]][edge[1]]['weight'] = self.opd.graph[edge[0]][edge[1]]['weight']
 
                 # Calculate weigth of optimal path after reveal it
-                optimal_path_weight = nx.path_weight(subgraph, optimal_path, 'weight')
+                proposed_path, proposed_path_weight = self.opd.proposed_path(set_edges)
 
                 # Check if it is a self.alpha certificate
                 p_opt = self.opd.optimal_path_bound(set_edges)
 
-                if optimal_path_weight <= self.alpha * p_opt[1]:
+                if proposed_path_weight <= self.alpha * p_opt[1]:
                     return list(set(set_edges))
                 i += 1
 
             elif 'inf':
                 # Find the shortest path between self.s and self.t in the subgraph
                 optimal_path = nx.shortest_path(subgraph, source=self.s, target=self.t, weight='weight')
-                optimal_path_edge = [(optimal_path[i], optimal_path[i + 1]) for i in range(len(optimal_path) - 1)]
+                optimal_path_edge = [(min(optimal_path[i], optimal_path[i + 1]),
+                                      max(optimal_path[i], optimal_path[i + 1])) for i in range(len(optimal_path) - 1)]
 
                 set_edges.extend(optimal_path_edge)
 
                 # Change weight of edges of set_edges by the real weight
+                if self.opd.weight_type == 'dynamic':
+                    self.opd.adversary(optimal_path_edge)
                 for edge in optimal_path_edge:
-                    subgraph[edge[0]][edge[1]]['weight'] = graph[edge[0]][edge[1]]['weight']
+
+                    subgraph[edge[0]][edge[1]]['weight'] = self.opd.graph[edge[0]][edge[1]]['weight']
 
                 # Calculate weigth of optimal path after reveal it
-                optimal_path_weight = nx.path_weight(subgraph, optimal_path, 'weight')
+                proposed_path, proposed_path_weight = self.opd.proposed_path(set_edges)
 
                 # Check if it is a self.alpha certificate
                 p_opt = self.opd.optimal_path_bound(set_edges)
-
-                if optimal_path_weight <= self.alpha*p_opt[1]:
+                if proposed_path_weight <= self.alpha*p_opt[1]:
                     return list(set(set_edges))
 
     def both_alg(self):
-        graph = self.graph.copy()
         graph_uncovered = nx.Graph()
-        graph_uncovered.add_nodes_from(graph.nodes)
+        graph_uncovered.add_nodes_from(self.graph.nodes)
         m_s = set()
         m_t = set()
         p_su = {}
@@ -103,6 +107,7 @@ class Alg:
         s_aux = self.s
         t_aux = self.t
         approx = float('inf')
+        set_edges = []
 
         while approx > self.alpha:
             m_s.add(s_aux)
@@ -110,16 +115,26 @@ class Alg:
 
             diff_set = m_t.union(m_s)
             # edges reveled
-            graph_uncovered.add_edge(s_aux, t_aux, weight=graph[s_aux][t_aux]['weight'])
+            if self.opd.weight_type == 'dynamic':
+                self.opd.adversary([(s_aux, t_aux)])
+            graph_uncovered.add_edge(s_aux, t_aux, weight=self.opd.graph[s_aux][t_aux]['weight'])
+            set_edges.append((s_aux, t_aux))
             for u in (graph_uncovered.nodes() - diff_set):
-                graph_uncovered.add_edge(s_aux, u, weight=graph[s_aux][u]['weight'])
+                if self.opd.weight_type == 'dynamic':
+                    self.opd.adversary([(s_aux, u)])
+                graph_uncovered.add_edge(s_aux, u, weight=self.opd.graph[s_aux][u]['weight'])
+                set_edges.append((s_aux, u))
+
             for v in (graph_uncovered.nodes() - diff_set):
-                graph_uncovered.add_edge(v, t_aux, weight=graph[s_aux][v]['weight'])
+                if self.opd.weight_type == 'dynamic':
+                    self.opd.adversary([(t_aux, v)])
+                graph_uncovered.add_edge(v, t_aux, weight=self.opd.graph[s_aux][v]['weight'])
+                set_edges.append((t_aux, v))
 
             # Optimal path from s to t containing only uncovered edges.
             p_prop = nx.shortest_path(graph_uncovered, source=self.s, target=self.t, weight='weight')
-            p_prop_edge = [(p_prop[i], p_prop[i + 1]) for i in range(len(p_prop) - 1)]
-
+            p_prop_edge = [(min(p_prop[i], p_prop[i + 1]), max(p_prop[i], p_prop[i + 1]))
+                           for i in range(len(p_prop) - 1)]
             # Optimal path from s to u containing only uncovered edges.
             for u in (graph_uncovered.nodes() - diff_set):
 
@@ -138,6 +153,4 @@ class Alg:
 
             approx = p_prop_weight / (p_su[f'{s_aux}'] + p_ut[f'{t_aux}'])
 
-        return p_prop_edge
-
-
+        return set_edges

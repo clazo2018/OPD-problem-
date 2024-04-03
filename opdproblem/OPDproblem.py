@@ -6,28 +6,106 @@ import networkx as nx
 class OPDGraph:
     """ Create an Instance of OPD problem """
 
-    def __init__(self, n, limit_inf=0, limit_sup=100, weight_type='static'):
+    def __init__(self, n, limit_inf=1, limit_sup=100, weight_type='static', area_type='bounded_homogeneous'):
         self.n = n
         self.graph = nx.complete_graph(n)
-        self.start = []
+        self.area_type = area_type
         self.weight_type = weight_type
         # Generate random uncertainty areas for edges and assign weights
         for u, v in self.graph.edges():
             # Generate random start and end points for the interval
-            start = rd.uniform(limit_inf, limit_sup) + rd.uniform(0, 50)
-            end = start + rd.uniform(0, 50)
+            if self.area_type == 'bounded_homogeneous':
+                self.graph[u][v]['area'] = (limit_inf, limit_sup)
 
-            # assign area
-            self.graph[u][v]['area'] = (start, end)
+            elif self.area_type == 'bounded_non_homogeneous':
+                start = rd.uniform(limit_inf, limit_sup) + rd.uniform(0, 50)
+                end = start + rd.uniform(0, 50)
+
+                # assign area
+                self.graph[u][v]['area'] = (start, end)
+
+            elif self.area_type == 'unbounded_non_homogeneous':
+                self.graph[u][v]['area'] = (rd.uniform(limit_inf, limit_sup), limit_sup)
 
             # assign weight
             if weight_type == 'static':
                 # Generate a random number within the interval and assign it as weight
-                weight = rd.uniform(start, end)
-                self.graph[u][v]['weight'] = weight
 
-    def adversary(self, set_ed):
-        pass
+                weight = rd.uniform(self.graph[u][v]['area'][0], self.graph[u][v]['area'][1])
+                self.graph[u][v]['weight'] = weight
+            if weight_type == 'dynamic':
+                # Generate a random number within the interval and assign it as weight
+                self.graph[u][v]['weight'] = None
+
+    def adversary(self, set_edges, s=0, t=1):
+
+        G_s = {s}
+        G_t = {t}
+
+        g = {}
+        eps = (self.graph[s][t]['area'][0] + self.graph[s][t]['area'][1]) / 2
+        b = (eps + self.graph[s][t]['area'][1]) / 2
+        gamma = (b + self.graph[s][t]['area'][1]) / 2  # alpha *
+
+        st_set = {s, t}
+        for v in (self.graph.nodes() - st_set):
+            g[f'{v}'] = float('-inf')
+        g[f'{s}'] = s
+        g[f'{t}'] = t
+        graph_uncovered = nx.Graph()
+        graph_uncovered.add_nodes_from(self.graph.nodes)
+
+        for e in set_edges:
+            if e == (s, t):
+                self.graph[e[0]][e[1]]['weight'] = b
+
+            elif e[0] == s:
+                if g[f'{e[1]}'] == float('-inf'):
+                    self.graph[e[0]][e[1]]['weight'] = eps
+                    g[f'{e[1]}'] = s
+                    G_s = G_s.union([e[1]])
+                    graph_uncovered.add_edge(*e)
+
+                elif g[f'{e[1]}'] == t:
+                    self.graph[e[0]][e[1]]['weight'] = gamma
+
+            elif e[0] == t:
+                if g[f'{e[1]}'] == float('-inf'):
+                    self.graph[e[0]][e[1]]['weight'] = eps
+                    g[f'{e[1]}'] = t
+                    G_t = G_t.union([e[1]])
+                    graph_uncovered.add_edge(*e)
+
+                elif g[f'{e[1]}'] == s:
+                    self.graph[e[0]][e[1]]['weight'] = gamma
+            elif e[0] not in st_set:
+                if g[f'{e[0]}'] == g[f'{e[1]}'] == float('-inf'):
+                    self.graph[e[0]][e[1]]['weight'] = eps
+                    graph_uncovered.add_edge(*e)
+
+                elif g[f'{e[0]}'] == float('-inf') and (g[f'{e[1]}'] in st_set):
+                    self.graph[e[0]][e[1]]['weight'] = eps
+                    g[f'{e[0]}'] = g[f'{e[1]}']
+                    nodes_path = set()
+                    graph_uncovered.add_edge(*e)
+                    for u in graph_uncovered.nodes:
+                        if nx.has_path(graph_uncovered, u, e[0]):
+                            nodes_path.add(u)
+                    for v in nodes_path:
+                        g[f'{v}'] = g[f'{e[1]}']
+
+                    if g[f'{e[1]}'] == s:
+                        G_s = G_s.union(e[0])
+                        G_s = G_s.union(nodes_path)
+                    else:
+                        G_t = G_t.union(e[0])
+                        G_t = G_t.union(nodes_path)
+
+                elif g[f'{e[1]}'] in (st_set.difference([g[f'{e[1]}']])):
+                    self.graph[e[0]][e[1]]['weight'] = gamma
+                else:
+                    self.graph[e[0]][e[1]]['weight'] = eps
+                    graph_uncovered.add_edge(*e)
 
     def proposed_path(self, set_edges, s=0, t=1):
         """
@@ -115,6 +193,7 @@ class OPDGraph:
         optimal_path_weight = nx.shortest_path_length(self.graph, source=s, target=t, weight='weight')
 
         edges_certificate = [(optimal_path[i], optimal_path[i + 1]) for i in range(len(optimal_path) - 1)]
+        edges_certificate = [(min(u, v), max(u, v)) for u, v in edges_certificate]
         edges_graph = list(self.graph.edges())
 
         for i in range(1, len(edges_graph) + 1):
@@ -129,14 +208,3 @@ class OPDGraph:
 
                 if certificate:
                     return l_aux
-
-
-
-
-
-
-
-
-
-
-
