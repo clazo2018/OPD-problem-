@@ -1,12 +1,13 @@
 from itertools import combinations
 import random as rd
 import networkx as nx
+from sys import float_info
 
 
 class OPDGraph:
     """ Create an Instance of OPD problem """
 
-    def __init__(self, n, limit_inf=1, limit_sup=100, weight_type='static', area_type='bounded_homogeneous'):
+    def __init__(self, n, limit_inf=0, limit_sup=100, weight_type='static', area_type='bounded_homogeneous'):
         self.n = n
         self.graph = nx.complete_graph(n)
         self.area_type = area_type
@@ -25,7 +26,11 @@ class OPDGraph:
                 self.graph[u][v]['area'] = (start, end)
 
             elif self.area_type == 'unbounded_non_homogeneous':
-                self.graph[u][v]['area'] = (rd.uniform(limit_inf, limit_sup), limit_sup)
+                self.graph[u][v]['area'] = (rd.uniform(limit_inf, float_info.max), float_info.max)
+
+            elif self.area_type == 'unbounded_homogeneous':
+                self.graph[u][v]['area'] = (limit_inf, float_info.max)
+
 
             # assign weight
             if weight_type == 'static':

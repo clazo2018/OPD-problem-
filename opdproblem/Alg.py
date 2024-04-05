@@ -115,21 +115,43 @@ class Alg:
 
             diff_set = m_t.union(m_s)
             # edges reveled
+
+            # Reveals edge (s_aux, t_aux)
             if self.opd.weight_type == 'dynamic':
                 self.opd.adversary([(s_aux, t_aux)])
             graph_uncovered.add_edge(s_aux, t_aux, weight=self.opd.graph[s_aux][t_aux]['weight'])
             set_edges.append((s_aux, t_aux))
+
+            # Check if set_edges is an alpha-certificate
+            proposed_path, proposed_path_weight = self.opd.proposed_path(set_edges)
+            if self.opd.certificate(set_edges, proposed_path_weight):
+                return set_edges
+
             for u in (graph_uncovered.nodes() - diff_set):
+
+                # Reveals edge (s_aux, u)
                 if self.opd.weight_type == 'dynamic':
                     self.opd.adversary([(s_aux, u)])
                 graph_uncovered.add_edge(s_aux, u, weight=self.opd.graph[s_aux][u]['weight'])
                 set_edges.append((s_aux, u))
 
+                # Check if set_edges is an alpha-certificate
+                proposed_path, proposed_path_weight = self.opd.proposed_path(set_edges)
+                if self.opd.certificate(set_edges, proposed_path_weight):
+                    return set_edges
+
             for v in (graph_uncovered.nodes() - diff_set):
+
+                # Reveals edge (t_aux, v)
                 if self.opd.weight_type == 'dynamic':
                     self.opd.adversary([(t_aux, v)])
                 graph_uncovered.add_edge(v, t_aux, weight=self.opd.graph[s_aux][v]['weight'])
                 set_edges.append((t_aux, v))
+
+                # Check if set_edges is an alpha-certificate
+                proposed_path, proposed_path_weight = self.opd.proposed_path(set_edges)
+                if self.opd.certificate(set_edges, proposed_path_weight):
+                    return set_edges
 
             # Optimal path from s to t containing only uncovered edges.
             p_prop = nx.shortest_path(graph_uncovered, source=self.s, target=self.t, weight='weight')
