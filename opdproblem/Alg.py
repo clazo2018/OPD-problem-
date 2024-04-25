@@ -1,7 +1,6 @@
 import random as rd
 import networkx as nx
 from .OPDproblem import OPDGraph
-import matplotlib.pyplot as plt
 
 
 class Alg:

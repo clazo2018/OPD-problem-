@@ -41,6 +41,8 @@ class OPDGraph:
             if weight_type == 'dynamic':
                 # Generate a random number within the interval and assign it as weight
                 self.graph[u][v]['weight'] = None
+        if self.area_type == 'bounded_homogeneous':
+            self.graph[0][1]['weight'] = self.graph[0][1]['area'][1]
 
     def adversary(self, set_edges, s=0, t=1):
 
@@ -213,3 +215,17 @@ class OPDGraph:
 
                 if certificate:
                     return l_aux
+
+    def query_ratio(self, alg_certificate):
+        """
+        Calculate the ratio for alg_certificate
+
+        :param alg_certificate: a list, certificate returned for the algorithm
+
+        :return beta: a float, ratio between alg_certificate and c_min
+        """
+
+        c_min = self.min_certificate()
+        beta = len(alg_certificate) / len(c_min)
+
+        return beta
