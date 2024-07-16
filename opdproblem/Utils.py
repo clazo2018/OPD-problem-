@@ -3,6 +3,7 @@ from .Alg import *
 from .OPDproblem import *
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib.lines as mlines
 
 
 def exp_alg(n_clique, n_instance, limit_inf=0, limit_sup=100, weight_type='static', area_type='bounded_non_homogeneous'):
@@ -65,15 +66,19 @@ def bar_plot(df, clique='k4'):
 
 
 def box_plot(df_list: list, colors=('#1f77b4', '#2ca02c', '#d8dcd6')):
+    colors2 = ('orange', 'red', 'purple')
     plt.figure(figsize=(15, 7))
     l_bp = []
     for i, df in enumerate(df_list):
         # Graficar boxplot para el primer dataframe
-        l_bp.append(plt.boxplot(df, positions=range(1, len(df.columns) + 1), patch_artist=True,
+        l_bp.append(plt.boxplot(df, showmeans=True, showfliers=False, positions=range(1, len(df.columns) + 1),
+                                patch_artist=True,
                                 boxprops=dict(facecolor=colors[i], alpha=0.7),
                                 whiskerprops=dict(color=colors[i]),
-                                flierprops=dict(marker='o', markerfacecolor=colors[i], markersize=8, alpha=0.7),
-                                capprops=dict(color=colors[i])))
+                                capprops=dict(color=colors[i]),
+                                meanprops=dict(marker='D', markerfacecolor=colors2[i], markeredgecolor=colors2[i]),
+                                medianprops=dict(color=colors2[i]),
+                                ))
 
     plt.title('Boxplots de algoritmos')
     plt.xlabel('Clique')
@@ -83,6 +88,15 @@ def box_plot(df_list: list, colors=('#1f77b4', '#2ca02c', '#d8dcd6')):
     # Etiquetas de los ticks en el eje x
     plt.xticks(range(1, len(df_list[0].columns) + 1), df_list[0].columns)
 
-    plt.legend([l_bp[0]["boxes"][0], l_bp[1]["boxes"][0], l_bp[2]["boxes"][0]], ['A. inf', 'A. random', 'A. both'])
+    # Crear etiquetas para la leyenda
+    legend_labels = ['A. inf', 'A. random', 'A. both']
+    mean_labels = ['Media (' + label + ')' for label in legend_labels]
+    median_labels = ['Mediana (' + label + ')' for label in legend_labels]
+
+    # Añadir las leyendas de media y mediana
+    plt.legend([l_bp[0]["boxes"][0], l_bp[1]["boxes"][0], l_bp[2]["boxes"][0],
+                l_bp[0]["means"][0], l_bp[1]["means"][0], l_bp[2]["means"][0],
+                l_bp[0]["medians"][0], l_bp[1]["medians"][0], l_bp[2]["medians"][0]],
+               legend_labels + mean_labels + median_labels)
 
     plt.show()

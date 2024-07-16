@@ -203,7 +203,10 @@ class OPDGraph:
         edges_certificate = [(min(u, v), max(u, v)) for u, v in edges_certificate]
         edges_graph = list(self.graph.edges())
 
-        for i in range(1, len(edges_graph) + 1):
+        # Delete edges in optimal path
+        edges_graph = list(set(edges_graph) - set(edges_certificate))
+
+        for i in range(len(edges_graph) + 1):
             for test in combinations(edges_graph, i):
                 # Create list to test certificate
                 cert_test = set(edges_certificate)
