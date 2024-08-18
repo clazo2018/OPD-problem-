@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+*.whl
+
+# Entornos virtuales
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+opdenv/
+
+# Archivos de configuración de IDE
+.idea/
+*.iml
+*.vscode/
+
+# Archivos de caché
+*.log
+*.sqlite3
+
+# Otros
+*.DS_Store
+*.pkl
