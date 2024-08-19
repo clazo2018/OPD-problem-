@@ -4,7 +4,9 @@ from .OPDproblem import *
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
-
+import networkx as nx
+import numpy as np
+import plotly.graph_objects as go
 
 def exp_alg(n_clique, n_instance, limit_inf=0, limit_sup=100, weight_type='static', area_type='bounded_non_homogeneous'):
     both = []
@@ -100,3 +102,117 @@ def box_plot(df_list: list, colors=('#1f77b4', '#2ca02c', '#d8dcd6')):
                legend_labels + mean_labels + median_labels)
 
     plt.show()
+
+def plot_opd_graph(opd):
+    """
+    Dibuja el grafo con los pesos y áreas de las aristas redondeados a dos decimales.
+    
+    :param graph: Un objeto de tipo networkx.Graph.
+    """
+    # Redondear los pesos a dos decimales
+    graph = opd.graph
+    for u, v in graph.edges():
+        graph[u][v]['weight'] = round(graph[u][v]['weight'], 2)
+
+    # Redondear las áreas a dos decimales
+    for u, v in graph.edges():
+        area_start, area_end = graph[u][v]['area']
+        graph[u][v]['area'] = (round(area_start, 2), round(area_end, 2))
+
+    # Obtener los pesos y áreas de las aristas
+    weights = [graph[u][v]['weight'] for u, v in graph.edges()]
+    areas = [graph[u][v]['area'] for u, v in graph.edges()]
+
+    # Dibujar el grafo con más espacio entre nodos
+    plt.figure(figsize=(8, 8))
+    pos = nx.circular_layout(graph)
+    nx.draw(graph, pos, with_labels=True, node_color='skyblue', node_size=2000)
+
+    # Ajustar las etiquetas de peso para que no se superpongan
+    nx.draw_networkx_edge_labels(graph, pos, edge_labels={(u, v): f"Weight: {graph[u][v]['weight']}\nArea: {graph[u][v]['area']}" for u, v in graph.edges()}, 
+                                 label_pos=0.5, font_size=8)
+    
+    # Mostrar la gráfica
+    plt.title('Grafo con pesos e intervalos')
+    plt.show()
+
+def plot_opd_graph_3d(opd):
+    """
+    Dibuja el grafo con los pesos y áreas de las aristas redondeados a dos decimales usando Plotly en 3D.
+    
+    :param opd: Un objeto de tipo OPDGraph.
+    """
+    graph = opd.graph
+
+    # Redondear los pesos a dos decimales
+    for u, v, data in graph.edges(data=True):
+        data['weight'] = round(data.get('weight', 0), 2)
+        area_start, area_end = data.get('area', (0, 0))
+        data['area'] = (round(area_start, 2), round(area_end, 2))
+
+    # Obtener las posiciones de los nodos en 3D
+    pos = nx.spring_layout(graph, dim=3)
+    x_nodes = np.array([pos[node][0] for node in graph.nodes()])
+    y_nodes = np.array([pos[node][1] for node in graph.nodes()])
+    z_nodes = np.array([pos[node][2] for node in graph.nodes()])
+
+    # Crear listas para los datos de las aristas
+    x_edges = []
+    y_edges = []
+    z_edges = []
+    edge_texts = []
+
+    for u, v, data in graph.edges(data=True):
+        x_edge = [pos[u][0], pos[v][0]]
+        y_edge = [pos[u][1], pos[v][1]]
+        z_edge = [pos[u][2], pos[v][2]]
+        x_edges.extend(x_edge)
+        y_edges.extend(y_edge)
+        z_edges.extend(z_edge)
+        
+        # Crear texto para la etiqueta de la arista
+        label = f"Weight: {data['weight']}<br>Area: {data['area']}"
+        mid_point = [(pos[u][0] + pos[v][0]) / 2, (pos[u][1] + pos[v][1]) / 2, (pos[u][2] + pos[v][2]) / 2]
+        edge_texts.append(mid_point)
+
+    # Crear trazas para nodos y aristas
+    edge_trace = go.Scatter3d(
+        x=x_edges,
+        y=y_edges,
+        z=z_edges,
+        mode='lines',
+        line=dict(width=0.5, color='#888')
+    )
+
+    node_trace = go.Scatter3d(
+        x=x_nodes,
+        y=y_nodes,
+        z=z_nodes,
+        mode='markers+text',
+        marker=dict(size=5, color='skyblue'),
+        text=[node for node in graph.nodes()],
+        textposition="bottom center"
+    )
+
+    # Trazas para las etiquetas de las aristas
+    edge_labels_trace = go.Scatter3d(
+        x=[p[0] for p in edge_texts],
+        y=[p[1] for p in edge_texts],
+        z=[p[2] for p in edge_texts],
+        mode='text',
+        text=[f"Weight: {data['weight']}<br>Area: {data['area']}" for _, _, data in graph.edges(data=True)],
+        textposition='top center'
+    )
+
+    fig = go.Figure(data=[edge_trace, node_trace, edge_labels_trace],
+                    layout=go.Layout(
+                        title="Grafo en 3D",
+                        showlegend=False,
+                        scene=dict(
+                            xaxis_title='X',
+                            yaxis_title='Y',
+                            zaxis_title='Z'
+                        )
+                    ))
+
+    fig.show()
